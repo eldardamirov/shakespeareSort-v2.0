@@ -6,6 +6,7 @@
 //  Copyright © 2017 Эльдар Дамиров. All rights reserved.
 //
 
+
 #include <sys/uio.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -305,8 +306,6 @@ bool comparator ( char* first, char* second );
 
 int main()
     {
-//    clock_t beginClock = clock();
-    //printf ( "%d, %d", 'a', 'Z' );
     readFromFile inputFile ( "input.txt" );
     writeToFile outputFile ( "output.txt", inputFile.getFileSize() );
 
