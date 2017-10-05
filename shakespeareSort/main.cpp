@@ -26,6 +26,9 @@
 #include <time.h>
 
 
+#include <iostream>
+
+
 
 
 
@@ -65,43 +68,21 @@ class readFromFile
             return tempBuffer;
             }
 
-       int getLinesQuantity()
-            {
-            int linesQuantity = 0;
-            char* index = strchr ( ( ( char* ) ( mapping->dataPointer ) ), '\n' );
-            //*index =  ( '\0' );
-            /*
-            __asm
-                {
-                mov eax, index;    // EAX = address of name
-                mov bl, '\0';
-                mov byte[eax], bl;
-                }
-            */
-           // printf ( "INDEX: %d\n", index );
-           // std::cout << "INDEX:" << index << std::endl;
-           // std::cout << "END" << std::endl;
-            char* filePointerEnd = strchr ( ( ( char* ) ( mapping->dataPointer ) ), '\0' ) - 1;
-            while ( ( index ) < filePointerEnd )
-                {
-                linesQuantity++;
-                index = ( strchr ( ( index + 1 ), '\n' ) );
-                }
-
-            linesQuantity = linesQuantity + 2;
-
-            return linesQuantity;
-            }
-
 
         size_t getFileSize()
             {
             return fileSize;
             }
 
+        int getLinesQuantity()
+            {
+            return linesQuantity;
+            }
+
+
         char* meGetDataPointer()
             {
-                return ( char* ) ( mapping->dataPointer );
+            return ( char* ) ( mapping->dataPointer );
             }
 
 
@@ -119,6 +100,7 @@ class readFromFile
         unsigned char* dataPointer = {};
         fileMapping* mapping;
         int currentChar = 0;
+        int linesQuantity = 0; // OPTIONAL
 
         void init()
             {
@@ -142,6 +124,8 @@ class readFromFile
             dataPointer = getDataPointer ( fileSize, fileDescriptor );
             mapping = createFileMapping ( fileDescriptor, dataPointer, fileSize );
 
+
+            linesQuantity = calculateLinesQuantity();
             }
 
         unsigned char* getDataPointer ( size_t fileSize, int fileDescriptor )
@@ -177,7 +161,33 @@ class readFromFile
             return tempMapping;
             }
 
+
+        int calculateLinesQuantity()  // returns EXACT number of lines, including empty lines; OPTIONAL0
+            {
+            int linesQuantity = 0;
+            char* index = strchr ( ( ( char* ) ( mapping->dataPointer ) ), '\n' );
+
+            char* filePointerEnd = strchr ( ( ( char* ) ( mapping->dataPointer ) ), '\0' ) - 1;
+            while ( ( index ) < filePointerEnd )
+                {
+                linesQuantity++;
+                index = ( strchr ( ( index + 1 ), '\n' ) );
+                }
+
+            linesQuantity = linesQuantity + 1;
+
+            return linesQuantity;
+            }
+
     };
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
 
 
 class writeToFile
@@ -263,8 +273,6 @@ class writeToFile
 
         void updateFileSize ( int fileDescriptor, int fileDescription )
             {
-            //fileDescription = write ( fileDescriptor, "", 1 );
-            //write ( fileDescriptor, "", 1 );
             if ( write ( fileDescriptor, "", 1 ) < 0 )
                 {
                 close ( fileDescriptor );
@@ -291,41 +299,69 @@ class writeToFile
 
 
 
-
-
-
-
     };
 
 
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
-bool comparator ( char* first, char* second );
 
 
+//bool comparator ( char* first, char* second );
+int comparator ( const void* first, const void* second );
+int compstr (char* a, char* b);
+
+
+//int comparator ( const void* first, const void* second );
 
 
 int main()
     {
+    clock_t beginClock = clock();
     readFromFile inputFile ( "input.txt" );
     writeToFile outputFile ( "output.txt", inputFile.getFileSize() );
 
-    char** lineBeginnings = new char* [ inputFile.getLinesQuantity() + 2 ] {};
 
-    int i = 0;
-    lineBeginnings [ i ] = inputFile.meGetDataPointer();
-    i++;
-    char* index = strchr ( ( ( char* ) ( inputFile.meGetDataPointer() ) ), '\n' );
-    char* filePointerEnd = strchr ( ( ( char* ) ( inputFile.meGetDataPointer() ) ), '\0' ) - 1;
-    while ( ( index ) < filePointerEnd )
+    //clock_t beginClock = clock();
+    int linesQuantity = inputFile.getLinesQuantity();
+
+    //double finalTime = clock() - beginClock;
+    //printf ( "%f", finalTime / 1000000 );
+
+    char** lineBeginnings = new char* [ linesQuantity ] {};  // lines beginnings pointers storage;
+
+    char* index = inputFile.meGetDataPointer();
+    lineBeginnings [ 0 ] = index;
+    for ( int i = 1; i < linesQuantity; i++ )
         {
-        lineBeginnings [ i ] = index + 1;
-        i++;
-        index = ( strchr ( ( index + 1 ), '\n' ) );
+        index = strchr ( ( index + 1 ) , '\n' );
+        lineBeginnings [ i ] = ( index + 1 );
         }
 
-    clock_t beginClock = clock();
+    //std::sort ( lineBeginnings, ( lineBeginnings + inputFile.getLinesQuantity() ), comparator );
+//    clock_t beginClock = clock();
+    qsort ( lineBeginnings, inputFile.getLinesQuantity(), sizeof ( char** ), comparator );
 
-    std::sort ( lineBeginnings, ( lineBeginnings + inputFile.getLinesQuantity() ), comparator );
+//    double finalTime = clock() - beginClock;
+//    printf ( "%f", finalTime / 1000000 );
+
+
+
+    ////
+    /*
+    for ( int i = 0; i < linesQuantity ; i++ )
+        {
+        std::cout << std::endl << ( int* ) lineBeginnings [ i ] << std::endl;
+        }
+     */
+    ////
+
+
+    //qsort ( lineBeginnings, linesQuantity, sizeof ( char* ), comparator );
+
+
 
     int addingToIndex = 0;
 
@@ -339,8 +375,8 @@ int main()
             addingToIndex++;
             }
         outputFile.writeNextChar ( '\n' );
+        i++;
         }
-
 
 
     double finalTime = clock() - beginClock;
@@ -349,28 +385,41 @@ int main()
     return 0;
     }
 
+/*
+int comparator ( const void* first, const void* second )
+    {
+   // char** currentElementFirst = * ( char ) ( first );
+   // char** currentElementSecond = * ( char ) ( second );
 
+//    char* currentFirst = ( char* ) first;
+//    char* currentSecond = ( char* ) second;
+
+
+    //std::cout << currentElementSecond << std::endl;
+
+    //return ( *currentElementFirst - *currentElementSecond >= 0 );
+//    return strcmp ( currentElementSecond, currentElementFirst );
+//        return strcmp ( ( char* ) second, ( char* ) first );
+
+ //   printf ( "%d - %d\n", *currentFirst, *currentSecond );
+
+    return ( ( int* ) first - ( int* ) second );
+    }
+*/
+
+
+
+/*
 bool comparator ( char* first, char* second )
     {
     int addingToIndex = 0;
-    //int oddSpaces = 0;
 
-    //while ( ( ( second + addingToIndex ) != NULL ) && ( ( first + addingToIndex ) != NULL ) && ( * ( first + addingToIndex ) != '\n' ) && ( * ( first + addingToIndex ) != '\0' ) && ( * ( second + addingToIndex ) != '\n' ) && ( * ( second + addingToIndex ) != '\0' ) )
     while ( ( ( first + addingToIndex ) != NULL ) && ( ( second + addingToIndex ) != NULL ) && ( * ( first + addingToIndex ) != '\n' ) && ( * ( second + addingToIndex ) != '\n' ) )
         {
         //if ( ( ( ( ( * ( first + addingToIndex ) >= 'a' ) ) && ( ( * ( first + addingToIndex ) <= 'z' ) ) ) || ( ( ( * ( first + addingToIndex ) >= 'A' ) ) && ( ( * ( first + addingToIndex ) <= 'Z' ) ) ) ) && ( ( ( ( * ( second + addingToIndex ) >= 'a' ) ) && ( ( * ( second + addingToIndex ) <= 'z' ) ) ) || ( ( ( * ( second + addingToIndex ) >= 'A' ) ) && ( ( * ( second + addingToIndex ) <= 'Z' ) ) ) ) )
-        if ( ( * ( first + addingToIndex ) + * ( second + addingToIndex ) >= 2 * 'Z' ) && ( * ( first + addingToIndex ) + * ( second + addingToIndex ) <= 2 * 'a' ) )
+        //if (  ( ( * ( first + addingToIndex ) + * ( second + addingToIndex ) ) >= 2 * 'A' ) && ( ( * ( first + addingToIndex ) + * ( second + addingToIndex ) ) <= 2 * 'z' ) )
+        if ( isalpha ( * ( first + addingToIndex ) ) && isalpha ( * ( second + addingToIndex ) ) )
             {
-            /*
-            if ( ( * ( first + addingToIndex ) == ' ' ) || ( * ( first + addingToIndex ) == ' ' ) )
-                {
-                oddSpaces++;
-                }
-            if ( oddSpaces > 1 )
-                {
-                return true;
-                }
-            */
             if (  *( first + addingToIndex ) < *( second + addingToIndex ) )
                 {
                 return true;
@@ -383,11 +432,48 @@ bool comparator ( char* first, char* second )
     return false;
     }
 
+*/
+
+int comparator ( const void* first, const void* second )
+    {
+    return strncmp ( *( const char** ) first, * ( const char** ) second, 32 );
+    }
+
+/*
+int compstr (char* a, char* b)
+{
+    int current=0;
+    int previous=0;
+
+    do
+    {
+        char one = *(a++);
+        char two = *(b++);
+        previous=current;
+
+       // if (&#111;&#110;e==two)
+        {
+            current=0;
+        }
+       // else
+        {
+            if (one<two)
+            {
+                current=-1;
+            }
+            else
+            {
+                current=+1;
+            }
+        }
+        loop++;
+    }while(!(current!=0 && previous==0 || (*a=='\n')||(*b=='\n')) );
+
+    return current;
+}
 
 
-
-
-
+*/
 
 
 
