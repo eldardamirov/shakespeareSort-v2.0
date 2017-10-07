@@ -7,6 +7,9 @@
 //
 
 
+
+const int quantityOfElementsToCompareFor = 64; // accurancy ~ quantityOfElementsToCompareFor; speed ~ 1 / quantityOfElementsToCompareFor;
+
 #include <sys/uio.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -239,17 +242,6 @@ class writeToFile
                 abort();
                 }
 
-            /*
-            if ( fstat ( fileDescriptor, &st ) < 0 )
-                {
-                printf ( "Fstat failed.\n" );
-                close ( fileDescriptor );
-                abort();
-                }
-            */
-            //fileSize = ( size_t ) st.st_size;
-            //fileSize = fileSize + 1;
-
             fileDescription = makeFileDescription ( fileDescriptor, fileSizeMe );
             updateFileSize ( fileDescriptor, fileDescription );
             map = mmapFile ( fileDescriptor, fileSizeMe );
@@ -309,12 +301,9 @@ class writeToFile
 
 
 
-//bool comparator ( char* first, char* second );
 int comparator ( const void* first, const void* second );
-int compstr (char* a, char* b);
 
 
-//int comparator ( const void* first, const void* second );
 
 
 int main()
@@ -340,36 +329,24 @@ int main()
         lineBeginnings [ i ] = ( index + 1 );
         }
 
-    //std::sort ( lineBeginnings, ( lineBeginnings + inputFile.getLinesQuantity() ), comparator );
+
 //    clock_t beginClock = clock();
-    qsort ( lineBeginnings, inputFile.getLinesQuantity(), sizeof ( char** ), comparator );
+    qsort ( lineBeginnings, linesQuantity, sizeof ( char** ), comparator );
 
 //    double finalTime = clock() - beginClock;
 //    printf ( "%f", finalTime / 1000000 );
 
 
 
-    ////
-    /*
-    for ( int i = 0; i < linesQuantity ; i++ )
-        {
-        std::cout << std::endl << ( int* ) lineBeginnings [ i ] << std::endl;
-        }
-     */
-    ////
-
-
-    //qsort ( lineBeginnings, linesQuantity, sizeof ( char* ), comparator );
-
-
 
     int addingToIndex = 0;
 
-    int fileBorder = inputFile.getLinesQuantity() - 1;
+    int fileBorder = linesQuantity - 1;
     for ( int i = 0; i < fileBorder; i++ )
         {
         addingToIndex = 0;
-        while ( ( ( lineBeginnings [ i ] + addingToIndex ) != NULL ) && ( * ( lineBeginnings [ i ] + addingToIndex ) != '\n' ) && ( * ( lineBeginnings [ i ] + addingToIndex ) != '\0' ) )
+        //while ( ( ( lineBeginnings [ i ] + addingToIndex ) != NULL ) && ( * ( lineBeginnings [ i ] + addingToIndex ) != '\n' ) && ( * ( lineBeginnings [ i ] + addingToIndex ) != '\0' ) )
+        while ( ( ( lineBeginnings [ i ] + addingToIndex ) != NULL ) && ( * ( lineBeginnings [ i ] + addingToIndex ) != '\n' ) )
             {
             outputFile.writeNextChar ( * ( lineBeginnings [ i ] + addingToIndex ) );
             addingToIndex++;
@@ -385,97 +362,12 @@ int main()
     return 0;
     }
 
-/*
-int comparator ( const void* first, const void* second )
-    {
-   // char** currentElementFirst = * ( char ) ( first );
-   // char** currentElementSecond = * ( char ) ( second );
 
-//    char* currentFirst = ( char* ) first;
-//    char* currentSecond = ( char* ) second;
-
-
-    //std::cout << currentElementSecond << std::endl;
-
-    //return ( *currentElementFirst - *currentElementSecond >= 0 );
-//    return strcmp ( currentElementSecond, currentElementFirst );
-//        return strcmp ( ( char* ) second, ( char* ) first );
-
- //   printf ( "%d - %d\n", *currentFirst, *currentSecond );
-
-    return ( ( int* ) first - ( int* ) second );
-    }
-*/
-
-
-
-/*
-bool comparator ( char* first, char* second )
-    {
-    int addingToIndex = 0;
-
-    while ( ( ( first + addingToIndex ) != NULL ) && ( ( second + addingToIndex ) != NULL ) && ( * ( first + addingToIndex ) != '\n' ) && ( * ( second + addingToIndex ) != '\n' ) )
-        {
-        //if ( ( ( ( ( * ( first + addingToIndex ) >= 'a' ) ) && ( ( * ( first + addingToIndex ) <= 'z' ) ) ) || ( ( ( * ( first + addingToIndex ) >= 'A' ) ) && ( ( * ( first + addingToIndex ) <= 'Z' ) ) ) ) && ( ( ( ( * ( second + addingToIndex ) >= 'a' ) ) && ( ( * ( second + addingToIndex ) <= 'z' ) ) ) || ( ( ( * ( second + addingToIndex ) >= 'A' ) ) && ( ( * ( second + addingToIndex ) <= 'Z' ) ) ) ) )
-        //if (  ( ( * ( first + addingToIndex ) + * ( second + addingToIndex ) ) >= 2 * 'A' ) && ( ( * ( first + addingToIndex ) + * ( second + addingToIndex ) ) <= 2 * 'z' ) )
-        if ( isalpha ( * ( first + addingToIndex ) ) && isalpha ( * ( second + addingToIndex ) ) )
-            {
-            if (  *( first + addingToIndex ) < *( second + addingToIndex ) )
-                {
-                return true;
-                }
-            }
-        addingToIndex++;
-        }
-
-
-    return false;
-    }
-
-*/
 
 int comparator ( const void* first, const void* second )
     {
-    return strncmp ( *( const char** ) first, * ( const char** ) second, 32 );
+    return strncmp ( *( const char** ) first, * ( const char** ) second, quantityOfElementsToCompareFor );
     }
-
-/*
-int compstr (char* a, char* b)
-{
-    int current=0;
-    int previous=0;
-
-    do
-    {
-        char one = *(a++);
-        char two = *(b++);
-        previous=current;
-
-       // if (&#111;&#110;e==two)
-        {
-            current=0;
-        }
-       // else
-        {
-            if (one<two)
-            {
-                current=-1;
-            }
-            else
-            {
-                current=+1;
-            }
-        }
-        loop++;
-    }while(!(current!=0 && previous==0 || (*a=='\n')||(*b=='\n')) );
-
-    return current;
-}
-
-
-*/
-
-
 
 
 
